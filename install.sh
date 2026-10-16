@@ -72,12 +72,16 @@ if ! $APK add --no-cache $ISH_PACKAGES; then
     # executable we actually rely on instead of treating an unrelated trigger
     # as a failed Hermes install.
     warn "An apk trigger failed (common on older iSH builds); retrying without scripts."
-    $APK add --no-cache --no-scripts $ISH_PACKAGES \
-        || die "apk package installation failed. Update iSH, then rerun this installer."
+    # apk can keep returning the stale trigger failure even when every requested
+    # package is already installed. Do not trust its status here; validate the
+    # concrete executables below.
+    $APK add --no-cache --no-scripts $ISH_PACKAGES || true
 fi
 command -v python3 >/dev/null 2>&1 || die "python3 was not installed. Update iSH, then rerun."
 command -v git >/dev/null 2>&1 || die "git was not installed. Update iSH, then rerun."
 command -v curl >/dev/null 2>&1 || die "curl was not installed. Update iSH, then rerun."
+PY_MINOR="$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)"
+[ "$PY_MINOR" = "3.11" ] || die "Expected Python 3.11 after pinning Alpine 3.19, got '${PY_MINOR:-broken}'. Your rootfs has mixed Alpine packages; use iSH Settings > File Systems > Import/restore a clean Alpine 3.19 filesystem."
 
 python3 -V
 

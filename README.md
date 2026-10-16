@@ -7,8 +7,9 @@ Install [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent
 ## Install
 
 1. Install **iSH Shell**.
-2. Keep iSH open in the foreground. iOS suspends long background jobs.
-3. Run:
+2. Update iSH itself from the App Store/TestFlight first. Do **not** upgrade Alpine past 3.19.
+3. Keep iSH open in the foreground. iOS suspends long background jobs.
+4. Run:
 
 ```sh
 apk add curl

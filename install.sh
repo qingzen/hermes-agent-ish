@@ -64,10 +64,20 @@ fi
 # ---------------------------------------------------------------- packages
 say "Installing Python 3.11 and build tools"
 # python3 on 3.19 = 3.11.14, which satisfies Hermes' requires-python >=3.11,<3.14.
-$APK add --no-cache \
-    python3 python3-dev py3-pip py3-virtualenv py3-setuptools py3-wheel \
-    git curl ca-certificates bash ncurses \
-    build-base musl-dev openssl-dev libffi-dev zlib-dev pkgconf
+ISH_PACKAGES="python3 python3-dev py3-pip py3-virtualenv py3-setuptools py3-wheel git curl ca-certificates bash ncurses build-base musl-dev openssl-dev libffi-dev zlib-dev pkgconf"
+if ! $APK add --no-cache $ISH_PACKAGES; then
+    # Older iSH kernels can SIGSYS third-party apk triggers (commonly glib's
+    # gio-querymodules trigger). Package extraction normally completed before
+    # the trigger phase. Retry without package scripts, then validate every
+    # executable we actually rely on instead of treating an unrelated trigger
+    # as a failed Hermes install.
+    warn "An apk trigger failed (common on older iSH builds); retrying without scripts."
+    $APK add --no-cache --no-scripts $ISH_PACKAGES \
+        || die "apk package installation failed. Update iSH, then rerun this installer."
+fi
+command -v python3 >/dev/null 2>&1 || die "python3 was not installed. Update iSH, then rerun."
+command -v git >/dev/null 2>&1 || die "git was not installed. Update iSH, then rerun."
+command -v curl >/dev/null 2>&1 || die "curl was not installed. Update iSH, then rerun."
 
 python3 -V
 
@@ -138,10 +148,11 @@ exec "$HERMES_VENV/bin/hermes" "\$@"
 EOF
 chmod +x "$BIN_DIR/hermes"
 
+PROFILE="$HOME/.profile"
+touch "$PROFILE"
 case ":${PATH}:" in
     *":$BIN_DIR:"*) ;;
     *)
-        PROFILE="$HOME/.profile"
         grep -q 'hermes-agent-ish' "$PROFILE" 2>/dev/null || cat >> "$PROFILE" <<EOF
 
 # hermes-agent-ish
